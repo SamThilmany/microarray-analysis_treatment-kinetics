@@ -11,16 +11,14 @@ BiocManager::install("biomaRt")
 require(biomaRt)
 
 # Get annotation table
-mart <- useMart('ENSEMBL_MART_ENSEMBL')
-mart <- useDataset('hsapiens_gene_ensembl', mart)
+ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+listAttributes(ensembl)
+
 annotLookup <- getBM(
   mart = mart,
   attributes = c(
     'agilent_sureprint_g3_ge_8x60k_v2',
-    'wikigene_description',
     'ensembl_gene_id',
-    'entrezgene_id',
-    'gene_biotype',
     'external_gene_name'
   )
 )
