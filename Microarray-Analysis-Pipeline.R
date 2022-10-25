@@ -14,10 +14,9 @@ experiment = 1
 graphicsDir <- paste0(baseDir, '/graphics')
 graphicsDirExp <- paste0(baseDir, '/graphics/exp', experiment)
 
-if (dir.exists(graphicsDir)) {
-  unlink(graphicsDir, recursive = TRUE)
+if (!dir.exists(graphicsDir)) {
+  dir.create(graphicsDir)
 }
-dir.create(graphicsDir)
 
 if (dir.exists(graphicsDirExp)) {
   unlink(graphicsDirExp, recursive = TRUE)
@@ -28,10 +27,9 @@ dir.create(graphicsDirExp)
 resultsDir <- paste0(baseDir, '/results')
 resultsDirExp <- paste0(baseDir, '/results/exp', experiment)
 
-if (dir.exists(resultsDir)) {
-  unlink(resultsDir, recursive = TRUE)
+if (!dir.exists(resultsDir)) {
+  dir.create(resultsDir)
 }
-dir.create(resultsDir)
 
 if (dir.exists(resultsDirExp)) {
   unlink(resultsDirExp, recursive = TRUE)
