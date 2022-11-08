@@ -362,6 +362,62 @@ cat(paste0(Sys.time(), ': ', 'Maximal absolute log2FC for GTx: ', round(max(abs(
 cat('\n')
 
 
+treatment_EE_linear_absCoeff_GT4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 4],
+  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 4]
+)
+names(treatment_EE_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+treatment_LNG_linear_absCoeff_GT4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 4],
+  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 4]
+)
+names(treatment_LNG_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_absCoeff_GT4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 4],
+  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 4]
+)
+names(treatment_GTx_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+
+treatment_EE_linear_absCoeff_GT2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 2],
+  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 2]
+)
+names(treatment_EE_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+treatment_LNG_linear_absCoeff_GT2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 2],
+  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 2]
+)
+names(treatment_LNG_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_absCoeff_GT2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 2],
+  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 2]
+)
+names(treatment_GTx_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+
 treatment_EE_linear_filtered_log2FC <- treatment_EE_linear[abs(treatment_EE_linear$logFC) >= 1,]
 treatment_EE_linear_filtered_log2FC <- treatment_EE_linear_filtered_log2FC[order(abs(treatment_EE_linear_filtered_log2FC$logFC), decreasing = TRUE),]
 cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for an absolute log2FC value of at least 1, ', dim(treatment_EE_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_EE_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
@@ -411,14 +467,20 @@ tryCatch(
     write.csv(treatment_EE_linear_filtered_log2FC, file = paste0('treatment_EE_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_EE_linear_filtered_pValue, file = paste0('treatment_EE_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_EE_linear_filtered_pValue_log2FC, file = paste0('treatment_EE_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
+    write.csv(treatment_EE_linear_absCoeff_GT4, file = paste0('treatment_EE_linear_absCoeff_GT4.csv'), row.names = FALSE)
+    write.csv(treatment_EE_linear_absCoeff_GT2, file = paste0('treatment_EE_linear_absCoeff_GT2.csv'), row.names = FALSE)
     
     write.csv(treatment_LNG_linear_filtered_log2FC, file = paste0('treatment_LNG_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_LNG_linear_filtered_pValue, file = paste0('treatment_LNG_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_LNG_linear_filtered_pValue_log2FC, file = paste0('treatment_LNG_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_linear_absCoeff_GT4, file = paste0('treatment_LNG_linear_absCoeff_GT4.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_linear_absCoeff_GT2, file = paste0('treatment_LNG_linear_absCoeff_GT2.csv'), row.names = FALSE)
     
     write.csv(treatment_GTx_linear_filtered_log2FC, file = paste0('treatment_GTx_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_GTx_linear_filtered_pValue, file = paste0('treatment_GTx_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_GTx_linear_filtered_pValue_log2FC, file = paste0('treatment_GTx_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_linear_absCoeff_GT4, file = paste0('treatment_GTx_linear_absCoeff_GT4.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_linear_absCoeff_GT2, file = paste0('treatment_GTx_linear_absCoeff_GT2.csv'), row.names = FALSE)
   },
   finally = {
     setwd(baseDir)
