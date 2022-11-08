@@ -49,14 +49,17 @@ if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
 # Install Bioconductor Packages
-BiocManager::install(c("limma"))
-library(limma)
+BiocManager::install("limma", update = TRUE, ask = FALSE, checkBuilt = TRUE)
+require(limma)
 
 # Load R packages
 require(statmod)
 require(stringr)
 require(gplots)
 require(tidyr)
+
+# Capture the output to a log file
+sink(file = paste0(resultsDirExp, '/log.txt'), append = TRUE, type = c('output', 'message'), split = TRUE)
 
 
 
@@ -118,7 +121,7 @@ eset <- read.maimages(
 )
 
 dim_eset$raw <- dim(eset)
-cat(paste0('The raw data has been loaded. The dataset includes ', dim_eset$raw[1], ' probes'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'The raw data has been loaded. The dataset includes ', dim_eset$raw[1], ' probes'), fill = TRUE)
 
 # Add the spot type
 spotTypes <- readSpotTypes(file = 'SpotTypes.tsv')
@@ -148,7 +151,7 @@ eset$genes$ensembl_gene_id <- annotation$ensembl_gene_id
 eset$genes$external_gene_name <- annotation$external_gene_name
 
 dim_eset$annotation <- dim(eset)
-cat(paste0('The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim(dim_eset$annotation)[1], ' probes/genes.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim(dim_eset$annotation)[1], ' probes/genes.'), fill = TRUE)
 
 
 
@@ -157,12 +160,12 @@ cat(paste0('The data has been annotated. This step also removed the control prob
 # #############################
 
 eset <- backgroundCorrect(eset, method = 'normexp')
-cat('Background correction was executed.', fill = TRUE)
+cat(paste0(Sys.time(), ': Background correction was executed.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/density-plot_bg-corrected.png'), width = 600, height = 350)
 plotDensities(eset, legend = FALSE, main = 'Density plot after background correction')
 dev.off()
-cat('The density plot with the background-corrected data was created', fill = TRUE)
+cat(paste0(Sys.time(), ': The density plot with the background-corrected data was created'), fill = TRUE)
 
 
 
@@ -184,17 +187,17 @@ dim_eset$samplesToFilter <- dim(eset[Control | NoSymbol | !IsExpr, ])
 eset <- eset[!Control & !NoSymbol & IsExpr, ]
 
 dim_eset$filtered <- dim(eset)
-cat(paste0('The data has been filtered. In total, ', dim_eset$samplesToFilter[1], ' samples were omitted (', dim_eset$controlSamples[1], ' control samples, ', dim_eset$notExpressedSamples[1], ' samples that were not significantly above the background, and ', dim_eset$samplesWoSymbol[1], ' samples that have no gene name). The dataset now includes: ', dim_eset$filtered[1], ' genes.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'The data has been filtered. In total, ', dim_eset$samplesToFilter[1], ' samples were omitted (', dim_eset$controlSamples[1], ' control samples, ', dim_eset$notExpressedSamples[1], ' samples that were not significantly above the background, and ', dim_eset$samplesWoSymbol[1], ' samples that have no gene name). The dataset now includes: ', dim_eset$filtered[1], ' genes.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/density-plot_filtered.png'), width = 600, height = 350)
 plotDensities(eset, legend = FALSE, main = 'Density plot after filtering')
 dev.off()
-cat('The density plot of the filtered data was created', fill = TRUE)
+cat(paste0(Sys.time(), ': The density plot of the filtered data was created'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/expression-values_filtered.png'), width = 600, height = 350)
 boxplot(log2(eset$E), main = "Expression values after filtering", ylab = "log2 intensity")
 dev.off()
-cat('The boxplot of the filtered values was created', fill = TRUE)
+cat(paste0(Sys.time(), ': The boxplot of the filtered values was created'), fill = TRUE)
 
 
 
@@ -213,22 +216,22 @@ eset$genes <- eset$genes[, c(
 # ##############
 
 eset <- normalizeBetweenArrays(eset, method = 'quantile')
-cat('The expression values were normalized so that they have similar distributions across the arrays.', fill = TRUE)
+cat(paste0(Sys.time(), ': The expression values were normalized so that they have similar distributions across the arrays.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/density-plot_normalized.png'), width = 600, height = 350)
 plotDensities(eset, legend = FALSE, main = 'Density plot after normalization')
 dev.off()
-cat('The density plot of the normalized data was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': The density plot of the normalized data was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/expression-values_normalized.png'), width = 600, height = 350)
 boxplot(log2(eset$E), main = "Expression values after normalization", ylab = "log2 intensity")
 dev.off()
-cat('The boxplot of the normalized data was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': The boxplot of the normalized data was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/mds.png'), width = 600, height = 350)
 plotMDS(eset, labels = substring(eset$targets$Name, 1, nchar(eset$targets$Name) - 3))
 dev.off()
-cat('The multidimensional scaling plot visualizing the distance between gene expression profiles of the different samples was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the distance between gene expression profiles of the different samples was created.'), fill = TRUE)
 
 
 
@@ -239,7 +242,7 @@ cat('The multidimensional scaling plot visualizing the distance between gene exp
 png(file = paste0(graphicsDirExp, '/batch-effect.png'), width = 600, height = 350)
 plotMDS(eset, labels = substring(eset$targets$Array_Batch, nchar(eset$targets$Array_Batch) - 4 + 1))
 dev.off()
-cat('The multidimensional scaling plot visualizing the distance between gene expression profiles of the different array batches was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the distance between gene expression profiles of the different array batches was created.'), fill = TRUE)
 
 
 
@@ -250,12 +253,12 @@ cat('The multidimensional scaling plot visualizing the distance between gene exp
 png(file = paste0(graphicsDirExp, '/expression-levels.png'), width = 600, height = 350)
 coolmap(eset$E, cluster.by="expression level", show.dendrogram = "column", col = "redblue", margins = c(7, 1), srtCol=45, labRow='', main = "Clustered by EL")
 dev.off()
-cat('The data has been clustered according to its expression levels.', fill = TRUE)
+cat(paste0(Sys.time(), ': The data has been clustered according to its expression levels.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/de-pattern.png'), width = 600, height = 350)
 coolmap(eset$E, cluster.by = "de pattern", show.dendrogram = "column", margins = c(7, 1), srtCol = 45, labRow = '', main = "Clustered by DE")
 dev.off()
-cat('The data has been clustered according to its DE pattern.', fill = TRUE)
+cat(paste0(Sys.time(), ': The data has been clustered according to its DE pattern.'), fill = TRUE)
 
 
 
@@ -264,13 +267,13 @@ cat('The data has been clustered according to its DE pattern.', fill = TRUE)
 # #####################
 
 array.weights <- arrayWeights(eset)
-cat('The array weights have been calculated.', fill = TRUE)
+cat(paste0(Sys.time(), ': The array weights have been calculated.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/array-weights.png'), width = 600, height = 350)
 barplot(array.weights, xlab = "Array", ylab = "Weight", main = "Array weights", col = "white", las = 2)
 abline(h = 1, lwd = 1, lty = 2)
 dev.off()
-cat('The barplot visualizing the array weights has was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': The barplot visualizing the array weights has was created.'), fill = TRUE)
 
 
 
@@ -302,8 +305,9 @@ design <- model.matrix( ~ Baseline.Lin + Baseline.Quad + Baseline.Cubic
 
 fit <- lmFit(eset, design, weights = array.weights)
 fit <- eBayes(fit, trend = TRUE, robust = TRUE)
+fit$coefficients <- as.data.frame(fit$coefficients)
 
-cat('The data has been fit to a polynomial regression.', fill = TRUE)
+cat(paste0(Sys.time(), ': The data has been fit to a polynomial regression.'), fill = TRUE)
 
 
 
@@ -317,7 +321,7 @@ abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
 dev.off()
-cat('A volcano plot showing the most significant DEGs of the linear fit for EE was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for EE was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_LNG_linear.png'), width = 600, height = 350)
 volcanoplot(fit, coef = 'treat_LNG.Lin', highlight = 10, names = fit$genes$external_gene_name, main = 'Volcanoplot for LNG (linear regression)')
@@ -325,7 +329,7 @@ abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
 dev.off()
-cat('A volcano plot showing the most significant DEGs of the linear fit for LNG was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for LNG was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_GTx_linear.png'), width = 600, height = 350)
 volcanoplot(fit, coef = 'treat_GTx.Lin', highlight = 10, names = fit$genes$external_gene_name, main = 'Volcanoplot for GTx (linear regression)')
@@ -333,7 +337,7 @@ abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
 dev.off()
-cat('A volcano plot showing the most significant DEGs of the linear fit for GTx was created.', fill = TRUE)
+cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for GTx was created.'), fill = TRUE)
 
 
 
@@ -343,60 +347,60 @@ cat('A volcano plot showing the most significant DEGs of the linear fit for GTx 
 
 treatment_EE_linear <- topTable(fit, coef = 'treat_EE.Lin', sort.by = 'p', number = Inf)
 cat('\n')
-cat(paste0('Minimal p value for EE: ', round(min(treatment_EE_linear$P.Value), digits = 4)), fill = TRUE)
-cat(paste0('Maximal absolute log2FC for EE: ', round(max(abs(treatment_EE_linear$logFC)), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Minimal p value for EE: ', round(min(treatment_EE_linear$P.Value), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Maximal absolute log2FC for EE: ', round(max(abs(treatment_EE_linear$logFC)), digits = 4)), fill = TRUE)
 cat('\n')
 
 treatment_LNG_linear <- topTable(fit, coef = 'treat_LNG.Lin', sort.by = 'p', number = Inf)
-cat(paste0('Minimal p value for LNG: ', round(min(treatment_LNG_linear$P.Value), digits = 4)), fill = TRUE)
-cat(paste0('Maximal absolute log2FC for LNG: ', round(max(abs(treatment_LNG_linear$logFC)), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Minimal p value for LNG: ', round(min(treatment_LNG_linear$P.Value), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Maximal absolute log2FC for LNG: ', round(max(abs(treatment_LNG_linear$logFC)), digits = 4)), fill = TRUE)
 cat('\n')
 
 treatment_GTx_linear <- topTable(fit, coef = 'treat_GTx.Lin', sort.by = 'p', number = Inf)
-cat(paste0('Minimal p value for GTx: ', round(min(treatment_GTx_linear$P.Value), digits = 4)), fill = TRUE)
-cat(paste0('Maximal absolute log2FC for GTx: ', round(max(abs(treatment_GTx_linear$logFC)), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Minimal p value for GTx: ', round(min(treatment_GTx_linear$P.Value), digits = 4)), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'Maximal absolute log2FC for GTx: ', round(max(abs(treatment_GTx_linear$logFC)), digits = 4)), fill = TRUE)
 cat('\n')
 
 
 treatment_EE_linear_filtered_log2FC <- treatment_EE_linear[abs(treatment_EE_linear$logFC) >= 1,]
 treatment_EE_linear_filtered_log2FC <- treatment_EE_linear_filtered_log2FC[order(abs(treatment_EE_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0('After filtering the data of EE for an absolute log2FC value of at least 1, ', dim(treatment_EE_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_EE_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for an absolute log2FC value of at least 1, ', dim(treatment_EE_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_EE_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
 
 treatment_EE_linear_filtered_pValue <- treatment_EE_linear[treatment_EE_linear$P.Value <= 0.05,]
 treatment_EE_linear_filtered_pValue <- treatment_EE_linear_filtered_pValue[order(treatment_EE_linear_filtered_pValue$P.Value),]
-cat(paste0('After filtering the data of EE for a p value <= 0.05, ', dim(treatment_EE_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_EE_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for a p value <= 0.05, ', dim(treatment_EE_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_EE_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
 
 treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue[abs(treatment_EE_linear_filtered_pValue$logFC) >= 1,]
 treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue_log2FC[order(treatment_EE_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0('After filtering the data of EE for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_EE_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_EE_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
 
 
 treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear[abs(treatment_LNG_linear$logFC) >= 1,]
 treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear_filtered_log2FC[order(abs(treatment_LNG_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0('After filtering the data of LNG for an absolute log2FC value of at least 1, ', dim(treatment_LNG_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_LNG_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for an absolute log2FC value of at least 1, ', dim(treatment_LNG_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_LNG_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
 
 treatment_LNG_linear_filtered_pValue <- treatment_LNG_linear[treatment_LNG_linear$P.Value <= 0.05,]
 treatment_LNG_linear_filtered_pValue <- treatment_LNG_linear_filtered_pValue[order(treatment_LNG_linear_filtered_pValue$P.Value),]
-cat(paste0('After filtering the data of LNG for a p value <= 0.05, ', dim(treatment_LNG_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_LNG_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for a p value <= 0.05, ', dim(treatment_LNG_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_LNG_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
 
 treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue[abs(treatment_LNG_linear_filtered_pValue$logFC) >= 1,]
 treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue_log2FC[order(treatment_LNG_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0('After filtering the data of LNG for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_LNG_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_LNG_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
 
 
 treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear[abs(treatment_GTx_linear$logFC) >= 1,]
 treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear_filtered_log2FC[order(abs(treatment_GTx_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0('After filtering the data of GTx for an absolute log2FC value of at least 1, ', dim(treatment_GTx_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_GTx_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for an absolute log2FC value of at least 1, ', dim(treatment_GTx_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_GTx_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
 
 treatment_GTx_linear_filtered_pValue <- treatment_GTx_linear[treatment_GTx_linear$P.Value <= 0.05,]
 treatment_GTx_linear_filtered_pValue <- treatment_GTx_linear_filtered_pValue[order(treatment_GTx_linear_filtered_pValue$P.Value),]
-cat(paste0('After filtering the data of GTx for a p value <= 0.05, ', dim(treatment_GTx_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_GTx_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for a p value <= 0.05, ', dim(treatment_GTx_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_GTx_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
 
 treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue[abs(treatment_GTx_linear_filtered_pValue$logFC) >= 1,]
 treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue_log2FC[order(treatment_GTx_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0('After filtering the data of GTx for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_GTx_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_GTx_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
 
 
@@ -406,19 +410,22 @@ tryCatch(
   expr = {
     write.csv(treatment_EE_linear_filtered_log2FC, file = paste0('treatment_EE_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_EE_linear_filtered_pValue, file = paste0('treatment_EE_linear_filtered_pValue.csv'), row.names = FALSE)
-    write.csv(treatment_EE_linear_filtered_pValue_log2FC, file = paste0('treatment_EE_linear_filtered_pValue_log2FC'), row.names = FALSE)
+    write.csv(treatment_EE_linear_filtered_pValue_log2FC, file = paste0('treatment_EE_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
     
     write.csv(treatment_LNG_linear_filtered_log2FC, file = paste0('treatment_LNG_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_LNG_linear_filtered_pValue, file = paste0('treatment_LNG_linear_filtered_pValue.csv'), row.names = FALSE)
-    write.csv(treatment_LNG_linear_filtered_pValue_log2FC, file = paste0('treatment_LNG_linear_filtered_pValue_log2FC'), row.names = FALSE)
+    write.csv(treatment_LNG_linear_filtered_pValue_log2FC, file = paste0('treatment_LNG_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
     
     write.csv(treatment_GTx_linear_filtered_log2FC, file = paste0('treatment_GTx_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_GTx_linear_filtered_pValue, file = paste0('treatment_GTx_linear_filtered_pValue.csv'), row.names = FALSE)
-    write.csv(treatment_GTx_linear_filtered_pValue_log2FC, file = paste0('treatment_GTx_linear_filtered_pValue_log2FC'), row.names = FALSE)
+    write.csv(treatment_GTx_linear_filtered_pValue_log2FC, file = paste0('treatment_GTx_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
   },
   finally = {
     setwd(baseDir)
   }
 )
 
-cat('The results have been saved to `.csv` files. The pipeline has come to a successful end.', fill = TRUE)
+cat(paste0(Sys.time(), ': The results have been saved to `.csv` files. The pipeline has come to a successful end.'), fill = TRUE)
+
+# End the output capture
+sink(file = NULL, split = FALSE)
