@@ -6,16 +6,15 @@
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
-BiocManager::install("biomaRt")
+BiocManager::install("biomaRt", update = TRUE, ask = FALSE, checkBuilt = TRUE)
 
 require(biomaRt)
 
 # Get annotation table
 ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
-listAttributes(ensembl)
 
 annotLookup <- getBM(
-  mart = mart,
+  mart = ensembl,
   attributes = c(
     'agilent_sureprint_g3_ge_8x60k_v2',
     'ensembl_gene_id',
