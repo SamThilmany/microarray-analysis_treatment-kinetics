@@ -49,7 +49,7 @@ if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
 # Install Bioconductor Packages
-BiocManager::install("limma", update = TRUE, ask = FALSE, checkBuilt = TRUE)
+BiocManager::install("limma", update = TRUE, ask = FALSE, force = TRUE, checkBuilt = TRUE)
 require(limma)
 
 # Load R packages
@@ -57,6 +57,8 @@ require(statmod)
 require(stringr)
 require(gplots)
 require(tidyr)
+require(dplyr)
+require(VennDiagram)
 
 # Capture the output to a log file
 sink(file = paste0(resultsDirExp, '/log.txt'), append = TRUE, type = c('output', 'message'), split = TRUE)
@@ -151,7 +153,7 @@ eset$genes$ensembl_gene_id <- annotation$ensembl_gene_id
 eset$genes$external_gene_name <- annotation$external_gene_name
 
 dim_eset$annotation <- dim(eset)
-cat(paste0(Sys.time(), ': ', 'The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim(dim_eset$annotation)[1], ' probes/genes.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim_eset$annotation[1], ' probes/genes.'), fill = TRUE)
 
 
 
@@ -286,17 +288,17 @@ Baseline.Lin  <- X[,1]
 Baseline.Quad <- X[,2]
 Baseline.Cubic <- X[,3]
 
-treat_EE.Lin  <- (targetinfo$Treatment=="EE" & targetinfo$Time > 0) * X[,1]
-treat_EE.Quad <- (targetinfo$Treatment=="EE" & targetinfo$Time > 0) * X[,2]
-treat_EE.Cubic <- (targetinfo$Treatment=="EE" & targetinfo$Time > 0) * X[,3]
+treat_EE.Lin  <- (targetinfo$Treatment == "EE" & targetinfo$Time > 0) * X[,1]
+treat_EE.Quad <- (targetinfo$Treatment == "EE" & targetinfo$Time > 0) * X[,2]
+treat_EE.Cubic <- (targetinfo$Treatment == "EE" & targetinfo$Time > 0) * X[,3]
 
-treat_LNG.Lin  <- (targetinfo$Treatment=="LNG" & targetinfo$Time > 0) * X[,1]
-treat_LNG.Quad <- (targetinfo$Treatment=="LNG" & targetinfo$Time > 0) * X[,2]
-treat_LNG.Cubic <- (targetinfo$Treatment=="LNG" & targetinfo$Time > 0) * X[,3]
+treat_LNG.Lin  <- (targetinfo$Treatment =="LNG" & targetinfo$Time > 0) * X[,1]
+treat_LNG.Quad <- (targetinfo$Treatment == "LNG" & targetinfo$Time > 0) * X[,2]
+treat_LNG.Cubic <- (targetinfo$Treatment == "LNG" & targetinfo$Time > 0) * X[,3]
 
-treat_GTx.Lin  <- (targetinfo$Treatment=="GTx" & targetinfo$Time > 0) * X[,1]
-treat_GTx.Quad <- (targetinfo$Treatment=="GTx" & targetinfo$Time > 0) * X[,2]
-treat_GTx.Cubic <- (targetinfo$Treatment=="GTx" & targetinfo$Time > 0) * X[,3]
+treat_GTx.Lin  <- (targetinfo$Treatment == "GTx" & targetinfo$Time > 0) * X[,1]
+treat_GTx.Quad <- (targetinfo$Treatment == "GTx" & targetinfo$Time > 0) * X[,2]
+treat_GTx.Cubic <- (targetinfo$Treatment == "GTx" & targetinfo$Time > 0) * X[,3]
 
 design <- model.matrix( ~ Baseline.Lin + Baseline.Quad + Baseline.Cubic
                         + treat_EE.Lin + treat_EE.Quad + treat_EE.Cubic
@@ -324,7 +326,7 @@ dev.off()
 cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for EE was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_LNG_linear.png'), width = 600, height = 350)
-volcanoplot(fit, coef = 'treat_LNG.Lin', highlight = 10, names = fit$genes$external_gene_name, main = 'Volcanoplot for LNG (linear regression)')
+volcanoplot(fit, coef = 'treat_LNG.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for LNG (linear regression)')
 abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
@@ -332,7 +334,7 @@ dev.off()
 cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for LNG was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_GTx_linear.png'), width = 600, height = 350)
-volcanoplot(fit, coef = 'treat_GTx.Lin', highlight = 10, names = fit$genes$external_gene_name, main = 'Volcanoplot for GTx (linear regression)')
+volcanoplot(fit, coef = 'treat_GTx.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for GTx (linear regression)')
 abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
@@ -341,10 +343,186 @@ cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of th
 
 
 
-# ############
-# Save results
-# ############
+# #########################
+# Generate analysis results
+# #########################
 
+# Filter the fit results based on the linear coefficient >= 4
+treatment_EE_linear_absCoeff_GTE4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 4],
+  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 4]
+)
+names(treatment_EE_linear_absCoeff_GTE4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+treatment_LNG_linear_absCoeff_GTE4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 4],
+  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 4]
+)
+names(treatment_LNG_linear_absCoeff_GTE4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_absCoeff_GTE4 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 4],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 4],
+  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 4]
+)
+names(treatment_GTx_linear_absCoeff_GTE4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
+cat('\n')
+
+
+# Find all overlapping genes
+overlap_EE_LNG_absCoeff_GTE4 <- intersect(treatment_EE_linear_absCoeff_GTE4$ensembl_gene_id, treatment_LNG_linear_absCoeff_GTE4$ensembl_gene_id)
+overlap_EE_LNG_absCoeff_GTE4 <- unique(overlap_EE_LNG_absCoeff_GTE4)
+
+overlap_EE_GTx_absCoeff_GTE4 <- intersect(treatment_EE_linear_absCoeff_GTE4$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE4$ensembl_gene_id)
+overlap_EE_GTx_absCoeff_GTE4 <- unique(overlap_EE_GTx_absCoeff_GTE4)
+
+overlap_LNG_GTx_absCoeff_GTE4 <- intersect(treatment_LNG_linear_absCoeff_GTE4$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE4$ensembl_gene_id)
+overlap_LNG_GTx_absCoeff_GTE4 <- unique(overlap_LNG_GTx_absCoeff_GTE4)
+
+overlap_all_absCoeff_GTE4 <- intersect(overlap_EE_LNG_absCoeff_GTE4, overlap_EE_GTx_absCoeff_GTE4)
+overlap_all_absCoeff_GTE4 <- unique(overlap_all_absCoeff_GTE4)
+
+overlapping_genes <- c(overlap_EE_LNG_absCoeff_GTE4, overlap_EE_GTx_absCoeff_GTE4, overlap_LNG_GTx_absCoeff_GTE4)
+overlapping_genes <- unique(overlapping_genes)
+
+
+# Create a dataframe with the full overlap genes
+treatment_EE_overlap_all_absCoeff_GTE4 <- treatment_EE_linear_absCoeff_GTE4[treatment_EE_linear_absCoeff_GTE4$ensembl_gene_id %in% overlap_all_absCoeff_GTE4,]
+treatment_LNG_overlap_all_absCoeff_GTE4 <- treatment_LNG_linear_absCoeff_GTE4[treatment_LNG_linear_absCoeff_GTE4$ensembl_gene_id %in% overlap_all_absCoeff_GTE4,]
+treatment_GTx_overlap_all_absCoeff_GTE4 <- treatment_GTx_linear_absCoeff_GTE4[treatment_GTx_linear_absCoeff_GTE4$ensembl_gene_id %in% overlap_all_absCoeff_GTE4,]
+
+
+# Create a dataframe with the no-overlap genes
+treatment_EE_overlap_none_absCoeff_GTE4 <- treatment_EE_linear_absCoeff_GTE4[!(treatment_EE_linear_absCoeff_GTE4$ensembl_gene_id %in% overlapping_genes),]
+treatment_LNG_overlap_none_absCoeff_GTE4 <- treatment_EE_linear_absCoeff_GTE4[!(treatment_LNG_linear_absCoeff_GTE4$ensembl_gene_id %in% overlapping_genes),]
+treatment_GTx_overlap_none_absCoeff_GTE4 <- treatment_GTx_linear_absCoeff_GTE4[!(treatment_GTx_linear_absCoeff_GTE4$ensembl_gene_id %in% overlapping_genes),]
+
+cat(paste0(Sys.time(), ': ', 'For the treatments with EE, LNG, and GTx, ', length(overlap_all_absCoeff_GTE4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4 in each treatment.'), fill = TRUE)
+cat('\n')
+
+
+# Filter the fit results based on the linear coefficient >= 2
+treatment_EE_linear_absCoeff_GTE2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 2],
+  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 2]
+)
+names(treatment_EE_linear_absCoeff_GTE2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+treatment_LNG_linear_absCoeff_GTE2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 2],
+  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 2]
+)
+names(treatment_LNG_linear_absCoeff_GTE2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_absCoeff_GTE2 <- data.frame(
+  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 2],
+  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 2],
+  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 2]
+)
+names(treatment_GTx_linear_absCoeff_GTE2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
+cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
+cat('\n')
+
+
+# Find all overlapping genes
+overlap_EE_LNG_absCoeff_GTE2 <- intersect(treatment_EE_linear_absCoeff_GTE2$ensembl_gene_id, treatment_LNG_linear_absCoeff_GTE2$ensembl_gene_id)
+overlap_EE_LNG_absCoeff_GTE2 <- unique(overlap_EE_LNG_absCoeff_GTE2)
+
+overlap_EE_GTx_absCoeff_GTE2 <- intersect(treatment_EE_linear_absCoeff_GTE2$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE2$ensembl_gene_id)
+overlap_EE_GTx_absCoeff_GTE2 <- unique(overlap_EE_GTx_absCoeff_GTE2)
+
+overlap_LNG_GTx_absCoeff_GTE2 <- intersect(treatment_LNG_linear_absCoeff_GTE2$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE2$ensembl_gene_id)
+overlap_LNG_GTx_absCoeff_GTE2 <- unique(overlap_LNG_GTx_absCoeff_GTE2)
+
+overlap_all_absCoeff_GTE2 <- intersect(overlap_EE_LNG_absCoeff_GTE2, overlap_EE_GTx_absCoeff_GTE2)
+overlap_all_absCoeff_GTE2 <- unique(overlap_all_absCoeff_GTE2)
+
+overlapping_genes <- c(overlap_EE_LNG_absCoeff_GTE2, overlap_EE_GTx_absCoeff_GTE2, overlap_LNG_GTx_absCoeff_GTE2)
+overlapping_genes <- unique(overlapping_genes)
+
+
+# Create a dataframe with the full overlap genes
+treatment_EE_overlap_all_absCoeff_GTE2 <- treatment_EE_linear_absCoeff_GTE2[treatment_EE_linear_absCoeff_GTE2$ensembl_gene_id %in% overlap_all_absCoeff_GTE2,]
+treatment_LNG_overlap_all_absCoeff_GTE2 <- treatment_LNG_linear_absCoeff_GTE2[treatment_LNG_linear_absCoeff_GTE2$ensembl_gene_id %in% overlap_all_absCoeff_GTE2,]
+treatment_GTx_overlap_all_absCoeff_GTE2 <- treatment_GTx_linear_absCoeff_GTE2[treatment_GTx_linear_absCoeff_GTE2$ensembl_gene_id %in% overlap_all_absCoeff_GTE2,]
+
+
+# Create a dataframe with the no-overlap genes
+treatment_EE_overlap_none_absCoeff_GTE2 <- treatment_EE_linear_absCoeff_GTE2[!(treatment_EE_linear_absCoeff_GTE2$ensembl_gene_id %in% overlapping_genes),]
+treatment_LNG_overlap_none_absCoeff_GTE2 <- treatment_EE_linear_absCoeff_GTE2[!(treatment_LNG_linear_absCoeff_GTE2$ensembl_gene_id %in% overlapping_genes),]
+treatment_GTx_overlap_none_absCoeff_GTE2 <- treatment_GTx_linear_absCoeff_GTE2[!(treatment_GTx_linear_absCoeff_GTE2$ensembl_gene_id %in% overlapping_genes),]
+
+cat(paste0(Sys.time(), ': ', 'For the treatments with EE, LNG, and GTx, ', length(overlap_all_absCoeff_GTE2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2 in each treatment.'), fill = TRUE)
+cat('\n')
+
+
+# Create Venn Diagrams
+venn.diagram(
+  x = list(treatment_EE_linear_absCoeff_GTE4$ensembl_gene_id, treatment_LNG_linear_absCoeff_GTE4$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE4$ensembl_gene_id),
+  category.names = c("EE" , "LNG" , "GTx"),
+  force.unique = TRUE,
+  main = 'DEG with a slope >= 4',
+  fontfamily = "sans",
+  main.fontfamily = "sans",
+  main.fontface = "bold",
+  main.cex = 0.3,
+  sub.fontfamily = "sans",
+  cat.fontfamily = "sans",
+  cex = 0.3,
+  cat.cex = 0.3,
+  cat.dist = 0.1,
+  lwd = 1,
+  filename = paste0(graphicsDirExp, '/venndiagram_GTE4.png'),
+  output = TRUE,
+  imagetype="png",
+  height = 350, 
+  width = 600, 
+  resolution = 300,
+  margin = 0.1,
+  disable.logging = TRUE
+)
+
+venn.diagram(
+  x = list(treatment_EE_linear_absCoeff_GTE2$ensembl_gene_id, treatment_LNG_linear_absCoeff_GTE2$ensembl_gene_id, treatment_GTx_linear_absCoeff_GTE2$ensembl_gene_id),
+  category.names = c("EE" , "LNG" , "GTx"),
+  force.unique = TRUE,
+  main = 'DEG with a slope >= 2',
+  fontfamily = "sans",
+  main.fontfamily = "sans",
+  main.fontface = "bold",
+  main.cex = 0.3,
+  sub.fontfamily = "sans",
+  cat.fontfamily = "sans",
+  cex = 0.3,
+  cat.cex = 0.3,
+  cat.dist = 0.1,
+  lwd = 1,
+  filename = paste0(graphicsDirExp, '/venndiagram_GTE2.png'),
+  output = TRUE,
+  imagetype="png",
+  height = 350, 
+  width = 600, 
+  resolution = 300,
+  margin = 0.1,
+  disable.logging = TRUE
+)
+
+
+
+# Create a top table
 treatment_EE_linear <- topTable(fit, coef = 'treat_EE.Lin', sort.by = 'p', number = Inf)
 cat('\n')
 cat(paste0(Sys.time(), ': ', 'Minimal p value for EE: ', round(min(treatment_EE_linear$P.Value), digits = 4)), fill = TRUE)
@@ -362,125 +540,97 @@ cat(paste0(Sys.time(), ': ', 'Maximal absolute log2FC for GTx: ', round(max(abs(
 cat('\n')
 
 
-treatment_EE_linear_absCoeff_GT4 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 4],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 4],
-  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 4]
-)
-names(treatment_EE_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
-cat('\n')
-
-treatment_LNG_linear_absCoeff_GT4 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 4],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 4],
-  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 4]
-)
-names(treatment_LNG_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
-cat('\n')
-
-treatment_GTx_linear_absCoeff_GT4 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 4],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 4],
-  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 4]
-)
-names(treatment_GTx_linear_absCoeff_GT4) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 4), ' genes were found, for which the absolute coefficient of the linear regression was at least 4.'), fill = TRUE)
-cat('\n')
-
-
-treatment_EE_linear_absCoeff_GT2 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_EE.Lin) >= 2],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_EE.Lin) >= 2],
-  fit$coefficients$treat_EE.Lin[abs(fit$coefficients$treat_EE.Lin) >= 2]
-)
-names(treatment_EE_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with EE,  ', sum(abs(fit$coefficients$treat_EE.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
-cat('\n')
-
-treatment_LNG_linear_absCoeff_GT2 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_LNG.Lin) >= 2],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_LNG.Lin) >= 2],
-  fit$coefficients$treat_LNG.Lin[abs(fit$coefficients$treat_LNG.Lin) >= 2]
-)
-names(treatment_LNG_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with LNG,  ', sum(abs(fit$coefficients$treat_LNG.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
-cat('\n')
-
-treatment_GTx_linear_absCoeff_GT2 <- data.frame(
-  fit$genes$ensembl_gene_id[abs(fit$coefficients$treat_GTx.Lin) >= 2],
-  fit$genes$external_gene_name[abs(fit$coefficients$treat_GTx.Lin) >= 2],
-  fit$coefficients$treat_GTx.Lin[abs(fit$coefficients$treat_GTx.Lin) >= 2]
-)
-names(treatment_GTx_linear_absCoeff_GT2) <- c(colnames(fit$genes)[2], colnames(fit$genes)[3], 'coefficients')
-cat(paste0(Sys.time(), ': ', 'For the treatment with GTx,  ', sum(abs(fit$coefficients$treat_GTx.Lin) >= 2), ' genes were found, for which the absolute coefficient of the linear regression was at least 2.'), fill = TRUE)
-cat('\n')
-
-
-treatment_EE_linear_filtered_log2FC <- treatment_EE_linear[abs(treatment_EE_linear$logFC) >= 1,]
+# Filter the top table by the log2FC
+treatment_EE_linear_filtered_log2FC <- treatment_EE_linear[abs(treatment_EE_linear$logFC) >= 2,]
 treatment_EE_linear_filtered_log2FC <- treatment_EE_linear_filtered_log2FC[order(abs(treatment_EE_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for an absolute log2FC value of at least 1, ', dim(treatment_EE_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_EE_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for an absolute log2FC value of at least 2, ', dim(treatment_EE_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_EE_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat('\n')
 
+treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear[abs(treatment_LNG_linear$logFC) >= 2,]
+treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear_filtered_log2FC[order(abs(treatment_LNG_linear_filtered_log2FC$logFC), decreasing = TRUE),]
+cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for an absolute log2FC value of at least 2, ', dim(treatment_LNG_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_LNG_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear[abs(treatment_GTx_linear$logFC) >= 2,]
+treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear_filtered_log2FC[order(abs(treatment_GTx_linear_filtered_log2FC$logFC), decreasing = TRUE),]
+cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for an absolute log2FC value of at least 2, ', dim(treatment_GTx_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_GTx_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
+cat('\n')
+
+
+# Filter the top table by the p value
 treatment_EE_linear_filtered_pValue <- treatment_EE_linear[treatment_EE_linear$P.Value <= 0.05,]
 treatment_EE_linear_filtered_pValue <- treatment_EE_linear_filtered_pValue[order(treatment_EE_linear_filtered_pValue$P.Value),]
 cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for a p value <= 0.05, ', dim(treatment_EE_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_EE_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
-
-treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue[abs(treatment_EE_linear_filtered_pValue$logFC) >= 1,]
-treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue_log2FC[order(treatment_EE_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_EE_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
-
-
-treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear[abs(treatment_LNG_linear$logFC) >= 1,]
-treatment_LNG_linear_filtered_log2FC <- treatment_LNG_linear_filtered_log2FC[order(abs(treatment_LNG_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for an absolute log2FC value of at least 1, ', dim(treatment_LNG_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_LNG_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
 
 treatment_LNG_linear_filtered_pValue <- treatment_LNG_linear[treatment_LNG_linear$P.Value <= 0.05,]
 treatment_LNG_linear_filtered_pValue <- treatment_LNG_linear_filtered_pValue[order(treatment_LNG_linear_filtered_pValue$P.Value),]
 cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for a p value <= 0.05, ', dim(treatment_LNG_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_LNG_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
-
-treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue[abs(treatment_LNG_linear_filtered_pValue$logFC) >= 1,]
-treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue_log2FC[order(treatment_LNG_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_LNG_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
-
-
-treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear[abs(treatment_GTx_linear$logFC) >= 1,]
-treatment_GTx_linear_filtered_log2FC <- treatment_GTx_linear_filtered_log2FC[order(abs(treatment_GTx_linear_filtered_log2FC$logFC), decreasing = TRUE),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for an absolute log2FC value of at least 1, ', dim(treatment_GTx_linear_filtered_log2FC)[1], ' genes were left. The best p value of these remaining genes was ', round(max(treatment_GTx_linear_filtered_log2FC$P.Value), digits = 4), '.'), fill = TRUE)
 
 treatment_GTx_linear_filtered_pValue <- treatment_GTx_linear[treatment_GTx_linear$P.Value <= 0.05,]
 treatment_GTx_linear_filtered_pValue <- treatment_GTx_linear_filtered_pValue[order(treatment_GTx_linear_filtered_pValue$P.Value),]
 cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for a p value <= 0.05, ', dim(treatment_GTx_linear_filtered_pValue)[1], ' genes were left. The best absolute log2FC of these remaining genes was ', round(max(abs(treatment_GTx_linear_filtered_pValue$logFC)), digits = 4), '.'), fill = TRUE)
-
-treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue[abs(treatment_GTx_linear_filtered_pValue$logFC) >= 1,]
-treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue_log2FC[order(treatment_GTx_linear_filtered_pValue_log2FC$logFC),]
-cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for a p value <= 0.05 and an absolute log2FC of at least 1, ', dim(treatment_GTx_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
 cat('\n')
 
+
+# Filter the top table by the p value and the log2FC
+treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue[abs(treatment_EE_linear_filtered_pValue$logFC) >= 2,]
+treatment_EE_linear_filtered_pValue_log2FC <- treatment_EE_linear_filtered_pValue_log2FC[order(treatment_EE_linear_filtered_pValue_log2FC$logFC),]
+cat(paste0(Sys.time(), ': ', 'After filtering the data of EE for a p value <= 0.05 and an absolute log2FC of at least 2, ', dim(treatment_EE_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat('\n')
+
+treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue[abs(treatment_LNG_linear_filtered_pValue$logFC) >= 2,]
+treatment_LNG_linear_filtered_pValue_log2FC <- treatment_LNG_linear_filtered_pValue_log2FC[order(treatment_LNG_linear_filtered_pValue_log2FC$logFC),]
+cat(paste0(Sys.time(), ': ', 'After filtering the data of LNG for a p value <= 0.05 and an absolute log2FC of at least 2, ', dim(treatment_LNG_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat('\n')
+
+treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue[abs(treatment_GTx_linear_filtered_pValue$logFC) >= 2,]
+treatment_GTx_linear_filtered_pValue_log2FC <- treatment_GTx_linear_filtered_pValue_log2FC[order(treatment_GTx_linear_filtered_pValue_log2FC$logFC),]
+cat(paste0(Sys.time(), ': ', 'After filtering the data of GTx for a p value <= 0.05 and an absolute log2FC of at least 2, ', dim(treatment_GTx_linear_filtered_pValue_log2FC)[1], ' genes were left.'), fill = TRUE)
+cat('\n')
+
+
+
+# #####################
+# Save results to files
+# #####################
 
 setwd(resultsDirExp)
 
 tryCatch(
   expr = {
+    write.csv(treatment_EE_overlap_all_absCoeff_GTE4, file = paste0('treatment_EE_overlap_all_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_EE_overlap_all_absCoeff_GTE2, file = paste0('treatment_EE_overlap_all_absCoeff_GTE2.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_overlap_all_absCoeff_GTE4, file = paste0('treatment_LNG_overlap_all_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_overlap_all_absCoeff_GTE2, file = paste0('treatment_LNG_overlap_all_absCoeff_GTE2.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_overlap_all_absCoeff_GTE4, file = paste0('treatment_GTx_overlap_all_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_overlap_all_absCoeff_GTE2, file = paste0('treatment_GTx_overlap_all_absCoeff_GTE2.csv'), row.names = FALSE)
+    
+    write.csv(treatment_EE_overlap_none_absCoeff_GTE4, file = paste0('treatment_EE_overlap_none_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_EE_overlap_none_absCoeff_GTE2, file = paste0('treatment_EE_overlap_none_absCoeff_GTE2.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_overlap_none_absCoeff_GTE4, file = paste0('treatment_LNG_overlap_none_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_overlap_none_absCoeff_GTE2, file = paste0('treatment_LNG_overlap_none_absCoeff_GTE2.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_overlap_none_absCoeff_GTE4, file = paste0('treatment_GTx_overlap_none_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_overlap_none_absCoeff_GTE2, file = paste0('treatment_GTx_overlap_none_absCoeff_GTE2.csv'), row.names = FALSE)
+    
     write.csv(treatment_EE_linear_filtered_log2FC, file = paste0('treatment_EE_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_EE_linear_filtered_pValue, file = paste0('treatment_EE_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_EE_linear_filtered_pValue_log2FC, file = paste0('treatment_EE_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
-    write.csv(treatment_EE_linear_absCoeff_GT4, file = paste0('treatment_EE_linear_absCoeff_GT4.csv'), row.names = FALSE)
-    write.csv(treatment_EE_linear_absCoeff_GT2, file = paste0('treatment_EE_linear_absCoeff_GT2.csv'), row.names = FALSE)
+    write.csv(treatment_EE_linear_absCoeff_GTE4, file = paste0('treatment_EE_linear_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_EE_linear_absCoeff_GTE2, file = paste0('treatment_EE_linear_absCoeff_GTE2.csv'), row.names = FALSE)
     
     write.csv(treatment_LNG_linear_filtered_log2FC, file = paste0('treatment_LNG_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_LNG_linear_filtered_pValue, file = paste0('treatment_LNG_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_LNG_linear_filtered_pValue_log2FC, file = paste0('treatment_LNG_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
-    write.csv(treatment_LNG_linear_absCoeff_GT4, file = paste0('treatment_LNG_linear_absCoeff_GT4.csv'), row.names = FALSE)
-    write.csv(treatment_LNG_linear_absCoeff_GT2, file = paste0('treatment_LNG_linear_absCoeff_GT2.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_linear_absCoeff_GTE4, file = paste0('treatment_LNG_linear_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_LNG_linear_absCoeff_GTE2, file = paste0('treatment_LNG_linear_absCoeff_GTE2.csv'), row.names = FALSE)
     
     write.csv(treatment_GTx_linear_filtered_log2FC, file = paste0('treatment_GTx_linear_filtered_log2FC.csv'), row.names = FALSE)
     write.csv(treatment_GTx_linear_filtered_pValue, file = paste0('treatment_GTx_linear_filtered_pValue.csv'), row.names = FALSE)
     write.csv(treatment_GTx_linear_filtered_pValue_log2FC, file = paste0('treatment_GTx_linear_filtered_pValue_log2FC.csv'), row.names = FALSE)
-    write.csv(treatment_GTx_linear_absCoeff_GT4, file = paste0('treatment_GTx_linear_absCoeff_GT4.csv'), row.names = FALSE)
-    write.csv(treatment_GTx_linear_absCoeff_GT2, file = paste0('treatment_GTx_linear_absCoeff_GT2.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_linear_absCoeff_GTE4, file = paste0('treatment_GTx_linear_absCoeff_GTE4.csv'), row.names = FALSE)
+    write.csv(treatment_GTx_linear_absCoeff_GTE2, file = paste0('treatment_GTx_linear_absCoeff_GTE2.csv'), row.names = FALSE)
   },
   finally = {
     setwd(baseDir)
@@ -488,6 +638,8 @@ tryCatch(
 )
 
 cat(paste0(Sys.time(), ': The results have been saved to `.csv` files. The pipeline has come to a successful end.'), fill = TRUE)
+
+
 
 # End the output capture
 sink(file = NULL, split = FALSE)
