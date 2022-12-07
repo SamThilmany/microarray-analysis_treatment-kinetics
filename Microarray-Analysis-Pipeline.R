@@ -318,7 +318,7 @@ cat(paste0(Sys.time(), ': The data has been fit to a polynomial regression.'), f
 # ###################
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_EE_linear.png'), width = 600, height = 350)
-volcanoplot(fit, coef = 'treat_EE.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for EE (linear regression)')
+volcanoplot(fit, coef = 'treat_EE.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for EE')
 abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
@@ -326,7 +326,7 @@ dev.off()
 cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for EE was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_LNG_linear.png'), width = 600, height = 350)
-volcanoplot(fit, coef = 'treat_LNG.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for LNG (linear regression)')
+volcanoplot(fit, coef = 'treat_LNG.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for LNG')
 abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
@@ -334,7 +334,7 @@ dev.off()
 cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for LNG was created.'), fill = TRUE)
 
 png(file = paste0(graphicsDirExp, '/volcanoplot_GTx_linear.png'), width = 600, height = 350)
-volcanoplot(fit, coef = 'treat_GTx.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for GTx (linear regression)')
+volcanoplot(fit, coef = 'treat_GTx.Lin', highlight = 10, names = fit$genes$external_gene_name, hl.col = 'red', main = 'Volcanoplot for GTx')
 abline(h = -log10(0.05), lwd = 1, lty = 2)
 abline(v = -2, lwd = 1, lty = 2)
 abline(v = 2, lwd = 1, lty = 2)
