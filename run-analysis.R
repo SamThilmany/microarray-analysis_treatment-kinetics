@@ -87,7 +87,7 @@ tryCatch(
     )
     
     if (!file.exists(annotationFile)) {
-      source(paste0(baseDir, '/', 'Annotation-File-Generator.R'), local = TRUE)
+      source(paste0(baseDir, '/', '_annotation-file-generator.R'), local = TRUE)
     }
   },
   finally = {
