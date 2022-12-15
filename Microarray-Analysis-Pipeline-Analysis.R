@@ -217,7 +217,8 @@ fit <- lmFit(eset, design, weights = array.weights)
 fit <- eBayes(fit, trend = TRUE, robust = TRUE)
 fit$coefficients <- as.data.frame(fit$coefficients)
 
-cat(paste0(Sys.time(), ': The data has been fit to a polynomial regression.'), fill = TRUE)
+cat('\n')
+cat(paste0(Sys.time(), ': The data has been fit to a polynomial regression using the model matrix "', modelMatrixFormula, '".'), fill = TRUE)
 cat('\n')
 
 
