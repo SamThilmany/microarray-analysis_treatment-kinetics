@@ -122,6 +122,9 @@ for (experiment in experiments) {
   
   source(paste0(baseDir, '/', 'Microarray-Analysis-Pipeline-Analysis.R'), local = TRUE)
   
+  # Remove tmp variables
+  rm(list = ls(pattern = '^tmp_'))
+  
   # End the output capture
   sink(file = NULL, split = FALSE)
   
