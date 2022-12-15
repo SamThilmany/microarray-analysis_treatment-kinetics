@@ -80,7 +80,7 @@ cat(paste0(Sys.time(), ': The density plot with the background-corrected data wa
 # ##########################
 
 Control <- eset$genes$ControlType != 0
-NoSymbol <- is.na(eset$genes$external_gene_name) | eset$genes$external_gene_name == ''
+NoSymbol <- is.na(eset$genes$external_gene_name) | eset$genes$external_gene_name == '' | is.na(eset$genes$ensembl_gene_id) |eset$genes$ensembl_gene_id == ''
 IsExpr <- rowSums(eset$other$gIsWellAboveBG > 0) == length(colnames(eset))
 
 dim_eset$controlSamples <- dim(eset[!Control, ])
