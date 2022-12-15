@@ -46,5 +46,6 @@ vignettes/*.pdf
 .Renviron
 
 # Files created by the script
+results/*
 graphics/*
 annotation-files/*
