@@ -120,7 +120,7 @@ for (experiment in experiments) {
   # Capture the output to a log file
   sink(file = paste0(resultsDirExp, '/log.txt'), append = TRUE, type = c('output', 'message'), split = TRUE)
   
-  source(paste0(baseDir, '/', 'Microarray-Analysis-Pipeline-Analysis.R'), local = TRUE)
+  source(paste0(baseDir, '/', '_analysis-script.R'), local = TRUE)
   
   # Remove tmp variables
   rm(list = ls(pattern = '^tmp_'))
