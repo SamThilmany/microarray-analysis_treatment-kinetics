@@ -1,5 +1,3 @@
-# Reference: https://support.bioconductor.org/p/9147231/
-
 # #####################
 # General configuration
 # #####################
