@@ -18,7 +18,7 @@ p_values <- c(0.05)
 polyDegree <- 3
 
 # Define name of negative control treatment
-treat_NC <- "NC"
+treat_NC <- 'NC'
 
 # Define the graphics dimensions
 graphics_dimensions <- c(1200, 700)
@@ -43,12 +43,18 @@ targetsFile <- 'Targets.tsv'
 # Prevent scientific notation
 options(scipen = 99)
 
+
+
+# ########
+# Packages
+# ########
+
 # Install the Bioconductor Manager
-if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+if (!require('BiocManager', quietly = TRUE))
+  install.packages('BiocManager')
 
 # Install Bioconductor Packages
-BiocManager::install("limma", update = TRUE, ask = FALSE, force = TRUE, checkBuilt = TRUE)
+BiocManager::install('limma', update = TRUE, ask = FALSE, force = TRUE, checkBuilt = TRUE)
 require(limma)
 
 # Load R packages
@@ -61,12 +67,30 @@ require(VennDiagram)
 
 
 
+# #########
+# Functions
+# #########
+
+# Define a function to print to the log file
+print_to_log <- function(...) {
+  tmp_arguments <- list(...)
+  tmp_string <- ''
+  
+  for (tmp_argument in tmp_arguments) {
+    tmp_string <- paste0(tmp_string, tmp_argument)
+  }
+  
+  cat(paste0(Sys.time(), ': ', tmp_string), fill = TRUE)
+}
+
+
+
 # ##################################
 # Read or create the annotation file
 # ##################################
 
 # Create a folder for annotation files
-annotationDir <- paste0(baseDir, "/annotation-files")
+annotationDir <- paste0(baseDir, '/annotation-files')
 
 if (!dir.exists(annotationDir)) {
   dir.create(annotationDir)
@@ -76,11 +100,11 @@ setwd(annotationDir)
 
 tryCatch(
   expr = {
-    currentMonth <- format(Sys.Date(), format="%Y-%m")
+    currentMonth <- format(Sys.Date(), format = '%Y-%m')
     
     annotationFile <- paste0(
       'Human_agilent_sureprint_g3_ge_8x60k_v2_', 
-      gsub("-", "_", as.character(currentMonth)), 
+      gsub('-', '_', as.character(currentMonth)), 
       '.tsv'
     )
     

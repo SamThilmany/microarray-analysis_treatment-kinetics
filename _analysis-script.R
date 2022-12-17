@@ -7,25 +7,25 @@ targetinfo <- readTargets(targetsFile, row.names = 'Name')
 targetinfo[order(targetinfo$Name),]
 
 # Extract the treatments
-treatments <- unique(targetinfo$Treatment)[unique(targetinfo$Treatment) != "NC"]
+treatments <- unique(targetinfo$Treatment[targetinfo$Treatment != 'NC'])
 
 # Select a subset for a specific experiment
 targetinfo <- subset(targetinfo, Experiment == experiment)
 
 # Converts the raw data to an EListRaw object
-wtAgilent.GFilter <- function(qta) { qta[,"gIsPosAndSignif"] }
+wtAgilent.GFilter <- function(qta) { qta[, 'gIsPosAndSignif'] }
 eset <- read.maimages(
   targetinfo,
   source = 'agilent.median',
   green.only = TRUE,
-  path = "data",
+  path = 'data',
   names = targetinfo$Name,
   other.columns = 'gIsWellAboveBG',
   wt.fun = wtAgilent.GFilter
 )
 
 dim_eset$raw <- dim(eset)
-cat(paste0(Sys.time(), ': ', 'The raw data has been loaded. The dataset includes ', dim_eset$raw[1], ' probes'), fill = TRUE)
+print_to_log('The raw data has been loaded. The dataset includes ', dim_eset$raw[1], ' probes')
 
 # Add the spot type
 spotTypes <- readSpotTypes(file = 'SpotTypes.tsv')
@@ -55,7 +55,7 @@ eset$genes$ensembl_gene_id <- annotation$ensembl_gene_id
 eset$genes$external_gene_name <- annotation$external_gene_name
 
 dim_eset$annotation <- dim(eset)
-cat(paste0(Sys.time(), ': ', 'The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim_eset$annotation[1], ' probes/genes.'), fill = TRUE)
+print_to_log('The data has been annotated. This step also removed the control probes, resulting in a reduced number of ', dim_eset$annotation[1], ' probes/genes.')
 
 
 
@@ -64,12 +64,12 @@ cat(paste0(Sys.time(), ': ', 'The data has been annotated. This step also remove
 # #############################
 
 eset <- backgroundCorrect(eset, method = 'normexp')
-cat(paste0(Sys.time(), ': Background correction was executed.'), fill = TRUE)
+print_to_log('Background correction was executed.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/density-plot_bg-corrected.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
 plotDensities(eset, legend = FALSE, main = 'Density plot after background correction')
 dev.off()
-cat(paste0(Sys.time(), ': The density plot with the background-corrected data was created'), fill = TRUE)
+print_to_log('The density plot with the background-corrected data was created')
 
 
 
@@ -91,17 +91,17 @@ dim_eset$samplesToFilter <- dim(eset[Control | NoSymbol | !IsExpr, ])
 eset <- eset[!Control & !NoSymbol & IsExpr, ]
 
 dim_eset$filtered <- dim(eset)
-cat(paste0(Sys.time(), ': ', 'The data has been filtered. In total, ', dim_eset$samplesToFilter[1], ' samples were omitted (', dim_eset$controlSamples[1], ' control samples, ', dim_eset$notExpressedSamples[1], ' samples that were not significantly above the background, and ', dim_eset$samplesWoSymbol[1], ' samples that have no gene name). The dataset now includes: ', dim_eset$filtered[1], ' genes.'), fill = TRUE)
+print_to_log('The data has been filtered. In total, ', dim_eset$samplesToFilter[1], ' samples were omitted (', dim_eset$controlSamples[1], ' control samples, ', dim_eset$notExpressedSamples[1], ' samples that were not significantly above the background, and ', dim_eset$samplesWoSymbol[1], ' samples that have no gene name). The dataset now includes: ', dim_eset$filtered[1], ' genes.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/density-plot_filtered.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
 plotDensities(eset, legend = FALSE, main = 'Density plot after filtering')
 dev.off()
-cat(paste0(Sys.time(), ': The density plot of the filtered data was created'), fill = TRUE)
+print_to_log('The density plot of the filtered data was created')
 
 png(file = paste0(graphicsDirExp, '/data-processing/expression-values_filtered.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
-boxplot(log2(eset$E), main = "Expression values after filtering", ylab = "log2 intensity")
+boxplot(log2(eset$E), main = 'Expression values after filtering', ylab = 'log2 intensity')
 dev.off()
-cat(paste0(Sys.time(), ': The boxplot of the filtered values was created'), fill = TRUE)
+print_to_log('The boxplot of the filtered values was created')
 
 
 
@@ -120,22 +120,22 @@ eset$genes <- eset$genes[, c(
 # ##############
 
 eset <- normalizeBetweenArrays(eset, method = 'quantile')
-cat(paste0(Sys.time(), ': The expression values were normalized so that they have similar distributions across the arrays.'), fill = TRUE)
+print_to_log('The expression values were normalized so that they have similar distributions across the arrays.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/density-plot_normalized.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
 plotDensities(eset, legend = FALSE, main = 'Density plot after normalization')
 dev.off()
-cat(paste0(Sys.time(), ': The density plot of the normalized data was created.'), fill = TRUE)
+print_to_log('The density plot of the normalized data was created.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/expression-values_normalized.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
-boxplot(log2(eset$E), main = "Expression values after normalization", ylab = "log2 intensity")
+boxplot(log2(eset$E), main = 'Expression values after normalization', ylab = 'log2 intensity')
 dev.off()
-cat(paste0(Sys.time(), ': The boxplot of the normalized data was created.'), fill = TRUE)
+print_to_log('The boxplot of the normalized data was created.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/mds.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
 plotMDS(eset, labels = substring(eset$targets$Name, 1, nchar(eset$targets$Name) - 3))
 dev.off()
-cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the distance between gene expression profiles of the different samples was created.'), fill = TRUE)
+print_to_log('The multidimensional scaling plot visualizing the distance between gene expression profiles of the different samples was created.')
 
 
 
@@ -146,7 +146,7 @@ cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the dist
 png(file = paste0(graphicsDirExp, '/data-processing/batch-effect.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
 plotMDS(eset, labels = substring(eset$targets$Array_Batch, nchar(eset$targets$Array_Batch) - 4 + 1))
 dev.off()
-cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the distance between gene expression profiles of the different array batches was created.'), fill = TRUE)
+print_to_log('The multidimensional scaling plot visualizing the distance between gene expression profiles of the different array batches was created.')
 
 
 
@@ -155,14 +155,14 @@ cat(paste0(Sys.time(), ': The multidimensional scaling plot visualizing the dist
 # ################
 
 png(file = paste0(graphicsDirExp, '/data-processing/expression-levels.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
-coolmap(eset$E, cluster.by="expression level", show.dendrogram = "column", col = "redblue", margins = c(7, 1), srtCol=45, labRow='', main = "Clustered by EL")
+coolmap(eset$E, cluster.by='expression level', show.dendrogram = 'column', col = 'redblue', margins = c(7, 1), srtCol=45, labRow='', main = 'Clustered by EL')
 dev.off()
-cat(paste0(Sys.time(), ': The data has been clustered according to its expression levels.'), fill = TRUE)
+print_to_log('The data has been clustered according to its expression levels.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/de-pattern.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
-coolmap(eset$E, cluster.by = "de pattern", show.dendrogram = "column", margins = c(7, 1), srtCol = 45, labRow = '', main = "Clustered by DE")
+coolmap(eset$E, cluster.by = 'de pattern', show.dendrogram = 'column', margins = c(7, 1), srtCol = 45, labRow = '', main = 'Clustered by DE')
 dev.off()
-cat(paste0(Sys.time(), ': The data has been clustered according to its DE pattern.'), fill = TRUE)
+print_to_log('The data has been clustered according to its DE pattern.')
 
 
 
@@ -171,13 +171,13 @@ cat(paste0(Sys.time(), ': The data has been clustered according to its DE patter
 # #####################
 
 array.weights <- arrayWeights(eset)
-cat(paste0(Sys.time(), ': The array weights have been calculated.'), fill = TRUE)
+print_to_log('The array weights have been calculated.')
 
 png(file = paste0(graphicsDirExp, '/data-processing/array-weights.png'), width = graphics_dimensions[1], height = graphics_dimensions[2])
-barplot(array.weights, xlab = "Array", ylab = "Weight", main = "Array weights", col = "white", las = 2)
+barplot(array.weights, xlab = 'Array', ylab = 'Weight', main = 'Array weights', col = 'white', las = 2)
 abline(h = 1, lwd = 1, lty = 2)
 dev.off()
-cat(paste0(Sys.time(), ': The barplot visualizing the array weights has was created.'), fill = TRUE)
+print_to_log('The barplot visualizing the array weights has was created.')
 
 
 
@@ -218,7 +218,7 @@ fit <- eBayes(fit, trend = TRUE, robust = TRUE)
 fit$coefficients <- as.data.frame(fit$coefficients)
 
 cat('\n')
-cat(paste0(Sys.time(), ': The data has been fit to a polynomial regression using the model matrix "', modelMatrixFormula, '".'), fill = TRUE)
+print_to_log('The data has been fit to a polynomial regression using the model matrix "', modelMatrixFormula, '".')
 cat('\n')
 
 
@@ -234,7 +234,7 @@ for (tmp_treatment in treatments) {
   abline(v = -2, lwd = 1, lty = 2)
   abline(v = 2, lwd = 1, lty = 2)
   dev.off()
-  cat(paste0(Sys.time(), ': A volcano plot showing the most significant DEGs of the linear fit for ', tmp_treatment, ' was created.'), fill = TRUE)
+  print_to_log('A volcano plot showing the most significant DEGs of the linear fit for ', tmp_treatment, ' was created.')
 }
 cat('\n')
 
@@ -248,8 +248,8 @@ topTables <- list()
 
 for (tmp_treatment in treatments) {
   tmp_table <- topTable(fit, coef = paste0('model_factors$treat_', tmp_treatment, '.Degree1'), sort.by = 'p', number = Inf)
-  cat(paste0(Sys.time(), ': ', 'Minimal p value for ', tmp_treatment, ': ', round(min(tmp_table$P.Value), digits = 4)), fill = TRUE)
-  cat(paste0(Sys.time(), ': ', 'Maximal absolute logFC for ', tmp_treatment, ': ', round(max(abs(tmp_table$logFC)), digits = 4)), fill = TRUE)
+  print_to_log('Minimal p value for ', tmp_treatment, ': ', round(min(tmp_table$P.Value), digits = 4))
+  print_to_log('Maximal absolute logFC for ', tmp_treatment, ': ', round(max(abs(tmp_table$logFC)), digits = 4))
   
   topTables$noFilter[[paste0('treatment_', tmp_treatment)]] <- tmp_table
 }
@@ -266,7 +266,7 @@ for (tmp_treatment in treatments) {
     tmp_noFilters_topTable <- topTables$noFilter[[paste0('treatment_', tmp_treatment)]]
     tmp_table <- tmp_noFilters_topTable[abs(tmp_noFilters_topTable$logFC) >= tmp_logFC_value,]
     tmp_table <- tmp_table[order(abs(tmp_table$logFC), decreasing = TRUE),]
-    cat(paste0(Sys.time(), ': ', 'After filtering the data of ', tmp_treatment, ' for an absolute logFC value of at least ', tmp_logFC_value, ', ', dim(tmp_table)[1], ' genes were left. The best p value of these remaining genes was ', round(max(tmp_table$P.Value), digits = 4), '.'), fill = TRUE)
+    print_to_log('After filtering the data of ', tmp_treatment, ' for an absolute logFC value of at least ', tmp_logFC_value, ', ', dim(tmp_table)[1], ' genes were left. The best p value of these remaining genes was ', round(max(tmp_table$P.Value), digits = 4), '.')
     
     topTables[[paste0('logFC_GTE_', tmp_logFC_value)]][[paste0('treatment_', tmp_treatment)]] <- tmp_table
   } 
@@ -284,7 +284,7 @@ for (tmp_treatment in treatments) {
     tmp_noFilters_topTable <- topTables$noFilter[[paste0('treatment_', tmp_treatment)]]
     tmp_table <- tmp_noFilters_topTable[abs(tmp_noFilters_topTable$P.Value) <= tmp_p_value,]
     tmp_table <- tmp_table[order(abs(tmp_table$P.Value), decreasing = TRUE),]
-    cat(paste0(Sys.time(), ': ', 'After filtering the data of ', tmp_treatment, ' for an absolute p value value of at most ', tmp_p_value, ', ', dim(tmp_table)[1], ' genes were left. The best absolute logFC value of these remaining genes was ', round(max(tmp_table$logFC), digits = 4), '.'), fill = TRUE)
+    print_to_log('After filtering the data of ', tmp_treatment, ' for an absolute p value value of at most ', tmp_p_value, ', ', dim(tmp_table)[1], ' genes were left. The best absolute logFC value of these remaining genes was ', round(max(tmp_table$logFC), digits = 4), '.')
     
     topTables[[paste0('pvalue_LTE_', tmp_p_value)]][[paste0('treatment_', tmp_treatment)]] <- tmp_table
   } 
@@ -303,7 +303,7 @@ for (tmp_treatment in treatments) {
       tmp_pValueFiltered_topTable <- topTables[[paste0('pvalue_LTE_', tmp_p_value)]][[paste0('treatment_', tmp_treatment)]]
       tmp_table <- tmp_pValueFiltered_topTable[abs(tmp_pValueFiltered_topTable$logFC) >= tmp_logFC_value,]
       tmp_table <- tmp_table[order(abs(tmp_table$logFC), decreasing = TRUE),]
-      cat(paste0(Sys.time(), ': ', 'After filtering the data of ', tmp_treatment, ' for an absolute p value value of at most ', tmp_p_value, ', and a logFC of at least ', tmp_logFC_value, ', ', dim(tmp_table)[1], ' genes were left. The best absolute logFC value of these remaining genes was ', round(max(tmp_table$logFC), digits = 4), '.'), fill = TRUE)
+      print_to_log('After filtering the data of ', tmp_treatment, ' for an absolute p value value of at most ', tmp_p_value, ', and a logFC of at least ', tmp_logFC_value, ', ', dim(tmp_table)[1], ' genes were left. The best absolute logFC value of these remaining genes was ', round(max(tmp_table$logFC), digits = 4), '.')
       
       topTables[[paste0('pvalue_LTE_', tmp_p_value, '_logFC_GTE_', tmp_logFC_value)]][[paste0('treatment_', tmp_treatment)]] <- tmp_table
     }
@@ -340,19 +340,19 @@ for (tmp_group_name in topTables_group_names) {
     category.names = treatments,
     force.unique = TRUE,
     main = paste0('DEG per treatment'),
-    fontfamily = "sans",
-    main.fontfamily = "sans",
-    main.fontface = "bold",
+    fontfamily = 'sans',
+    main.fontfamily = 'sans',
+    main.fontface = 'bold',
     main.cex = 0.3,
-    sub.fontfamily = "sans",
-    cat.fontfamily = "sans",
+    sub.fontfamily = 'sans',
+    cat.fontfamily = 'sans',
     cex = 0.3,
     cat.cex = 0.3,
     cat.dist = 0.05,
     lwd = 1,
     filename = paste0(tmp_groupGraphicsDir, '/venndiagram.png'),
     output = TRUE,
-    imagetype="png",
+    imagetype='png',
     width = graphics_dimensions[1],
     height = graphics_dimensions[2],
     resolution = 300,
@@ -385,7 +385,7 @@ for (tmp_group_name in topTables_group_names) {
     overlapping_genes[[tmp_group_name]][[toString(tmp_combinations[,tmp_combination])]] <- intersect(topTables[[tmp_group_name]][[tmp_combinations[,tmp_combination][1]]]$ensembl_gene_id, topTables[[tmp_group_name]][[tmp_combinations[,tmp_combination][2]]]$ensembl_gene_id)
     overlapping_genes[[tmp_group_name]][[toString(tmp_combinations[,tmp_combination])]] <- unique(overlapping_genes[[tmp_group_name]][[toString(tmp_combinations[,tmp_combination])]])
 
-    cat(paste0(Sys.time(), ': ', length(overlapping_genes[[tmp_group_name]][[toString(tmp_combinations[,tmp_combination])]]), ' genes overlap between ', tmp_combinations[,tmp_combination][1], ' and ', tmp_combinations[,tmp_combination][2], '.'), fill = TRUE)
+    print_to_log(length(overlapping_genes[[tmp_group_name]][[toString(tmp_combinations[,tmp_combination])]]), ' genes overlap between ', tmp_combinations[,tmp_combination][1], ' and ', tmp_combinations[,tmp_combination][2], '.')
   }
   cat('\n')
   
@@ -403,7 +403,7 @@ for (tmp_group_name in topTables_group_names) {
   }
   overlapping_genes[[tmp_group_name]]$all <- unique(overlapping_genes[[tmp_group_name]]$all)
 
-  cat(paste0(Sys.time(), ': ', length(overlapping_genes[[tmp_group_name]]$all), ' genes overlap in total for the following filter set: ', tmp_group_name, '.'), fill = TRUE)
+  print_to_log(length(overlapping_genes[[tmp_group_name]]$all), ' genes overlap in total for the following filter set: ', tmp_group_name, '.')
   cat('\n')
   
   
@@ -431,7 +431,7 @@ for (tmp_group_name in topTables_group_names) {
   overlapping_genes[[tmp_group_name]]$shared <- eval(parse(text = tmp_expression))
   overlapping_genes[[tmp_group_name]]$shared <- unique(overlapping_genes[[tmp_group_name]]$shared)
 
-  cat(paste0(Sys.time(), ': ', length(overlapping_genes[[tmp_group_name]]$shared), ' genes overlap in all treatments for the following filter set: ', tmp_group_name, '.'), fill = TRUE)
+  print_to_log(length(overlapping_genes[[tmp_group_name]]$shared), ' genes overlap in all treatments for the following filter set: ', tmp_group_name, '.')
   cat('\n')
 }
 
@@ -459,7 +459,7 @@ for (tmp_group_name in topTables_group_names) {
     }
     
     topTables[[tmp_group_name]][[tmp_group_df_name]] <- tmp_df
-    cat(paste0(Sys.time(), ': ', sum(as.logical(tmp_df$unique)), ' genes were unique for the filter set ', tmp_group_name, ' and the treatment ', tmp_group_df_name, '.'), fill = TRUE)
+    print_to_log(sum(as.logical(tmp_df$unique)), ' genes were unique for the filter set ', tmp_group_name, ' and the treatment ', tmp_group_df_name, '.')
   }
   cat('\n')
 }
@@ -482,7 +482,7 @@ for (tmp_group_name in names(topTables)) {
   
   for (tmp_df_name in names(topTables[[tmp_group_name]])) {
     write.csv(topTables[[tmp_group_name]][[tmp_df_name]], file = paste0(tmp_groupResultsDir, '/topTable_', tmp_df_name, '.csv'), row.names = FALSE)
-    cat(paste0(Sys.time(), ': The file ', paste0(tmp_groupResultsDir, '/topTable_', tmp_df_name, '.csv'), ' was created.'), fill = TRUE)
+    print_to_log('The file ', paste0(tmp_groupResultsDir, '/topTable_', tmp_df_name, '.csv'), ' was created.')
   }
   cat('\n')
 }
@@ -500,7 +500,7 @@ for (tmp_group_name in names(overlapping_genes)) {
   
   for (tmp_list_name in names(overlapping_genes[[tmp_group_name]])) {
     write.csv(overlapping_genes[[tmp_group_name]][[tmp_list_name]], file = paste0(tmp_groupResultsDir, '/overlappingGenes_', tmp_list_name, '.csv'), row.names = FALSE)
-    cat(paste0(Sys.time(), ': The file ', paste0(tmp_groupResultsDir, '/overlappingGenes_', tmp_list_name, '.csv'), ' was created.'), fill = TRUE)
+    print_to_log('The file ', paste0(tmp_groupResultsDir, '/overlappingGenes_', tmp_list_name, '.csv'), ' was created.')
   }
   cat('\n')
 }
